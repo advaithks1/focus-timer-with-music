@@ -1,15 +1,15 @@
 /* ================= CONFIG ================= */
 
-let studyTimeMinutes = 1;
+let studyTimeMinutes = 25; // ✅ FIXED (was 1)
 
 const breakTimeMap = {
-  1: 1,
+  25: 5,
   45: 10,
   60: 20
 };
 
 const appreciationMap = {
-  1: 1,
+  25: 3,
   45: 2,
   60: 1
 };
@@ -18,36 +18,13 @@ let breakTimeMinutes = breakTimeMap[studyTimeMinutes];
 
 // MUSIC FILES
 const studySong = "music/study.mp3";
-const breakSongs = [
-  "music/break/Vanakkam Chennai - Osaka Osaka Video _ Shiva, Priya Anand.mp3",
-  "music/break/Maragatha Naanayam _ Nee Kavithaigala Song with Lyrics _ Aadhi Nikki Galrani _ Dhibu Ninan Thomas.mp3",
-  "music/break/Vikram Vedha Songs _ Pogatha Yennavittu Song with Lyrics _ R.Madhavan, Vijay Sethupathi _ Sam C.S.mp3",
-  "music/break/Guru (Tamil) - Aaruyirae Video _ A.R. Rahman.mp3",
-  "music/break/Athinthom Video Song _ Chandramukhi Movie Songs _ 4K Full HD _ Rajinikanth _ SP Balasubrahmanyam.mp3",
-];
 
-// MOTIVATION MESSAGES
-const motivationMessages = [
-  "You stayed focused when it mattered.",
-  "Consistency quietly builds rank.",
-  "This session counts.",
-  "Discipline creates results.",
-  "Focused work compounds.",
-  "That was honest effort.",
-  "Momentum is building.",
-  "You’re preparing seriously.",
-  "Progress stacks quietly.",
-  "Well done. Stay steady.",
-  "This is real preparation.",
-  "Focus like this pays off.",
-  "Strong session completed.",
-  "You earned this break.",
-  "Keep this rhythm.",
-  "Another block done.",
-  "You didn’t rush. You stayed.",
-  "This is discipline.",
-  "Results follow effort.",
-  "You’re on track."
+const breakSongs = [
+  "music/break/Vanakkam Chennai - Osaka Osaka Video  Shiva, Priya Anand.mp3",
+  "music/break/Maragatha Naanayam _ Nee Kavithaigala Song with Lyrics _ Aadhi, Nikki Galrani _ Dhibu Ninan Thomas.mp3",
+  "music/break/Vikram Vedha Songs _ Pogatha Yennavittu Song with Lyrics _ R.Madhavan, Vijay Sethupathi _ Sam C.S.mp3",
+  "music/break/Guru (Tamil) - Aaruyirae Video  A.R. Rahman.mp3",
+  "music/break/Athinthom Video Song  Chandramukhi Movie Songs  4K Full HD  Rajinikanth  SP Balasubrahmanyam.mp3"
 ];
 
 /* ================= STATE ================= */
@@ -64,6 +41,8 @@ let currentBreakSongIndex = null;
 let appreciationShown = false;
 let waitingForStudyContinue = false;
 let waitingAfterBreak = false;
+
+let firstStartDone = false; // ✅ FIX
 
 /* ================= ELEMENTS ================= */
 
@@ -84,7 +63,6 @@ const breakAudio = document.getElementById("breakAudio");
 const startSound = document.getElementById("startSound");
 const endSound = document.getElementById("endSound");
 
-const toast = document.getElementById("statusToast");
 const studyButtons = document.querySelectorAll(".time-btn");
 
 const appreciationOverlay = document.getElementById("appreciationOverlay");
@@ -95,8 +73,8 @@ const continueBreakBtn = document.getElementById("continueBreakBtn");
 /* ================= INIT ================= */
 
 studyAudio.src = studySong;
-studyAudio.loop = true;        // Study music loops
-breakAudio.loop = false;       // Break music does NOT loop
+studyAudio.loop = true;
+breakAudio.loop = false;
 
 updateBreakInfo();
 updateDisplay();
@@ -109,7 +87,20 @@ function startTimer() {
 
   isRunning = true;
   playStartSound();
-  playMusic();
+
+  // ✅ FORCE STUDY MUSIC ON FIRST START
+  if (!firstStartDone && isStudyMode && musicEnabled) {
+    firstStartDone = true;
+    studyAudio.currentTime = 0;
+    studyAudio.volume = 0.8;
+    studyAudio.muted = false;
+
+    studyAudio.play()
+      .then(() => playMusic())
+      .catch(() => {});
+  } else {
+    playMusic();
+  }
 
   timerInterval = setInterval(() => {
     remainingSeconds--;
@@ -133,6 +124,7 @@ function resetTimer() {
   isStudyMode = true;
   sessionCount = 1;
   remainingSeconds = studyTimeMinutes * 60;
+  firstStartDone = false;
 
   appreciationShown = false;
   waitingForStudyContinue = false;
@@ -152,29 +144,16 @@ function handleSessionEnd() {
   pauseTimer();
   playEndSound();
 
-  if (isStudyMode) {
-    const threshold = appreciationMap[studyTimeMinutes];
-
-    if (!appreciationShown && sessionCount % threshold === 0) {
-      appreciationShown = true;
-      waitingForStudyContinue = true;
-      showStudyCard();
-      return;
-    }
-
-    startBreak();
-  } else {
-    waitingAfterBreak = true;
-    showBreakCard();
-  }
+  if (isStudyMode) startBreak();
+  else showBreakCard();
 }
 
-/* ================= MODE HANDLERS ================= */
+/* ================= MODES ================= */
 
 function startBreak() {
   isStudyMode = false;
   remainingSeconds = breakTimeMinutes * 60;
-  currentBreakSongIndex = null; // reset playlist
+  currentBreakSongIndex = null;
   nextMusicBtn.classList.remove("hidden");
 
   updateUI();
@@ -185,8 +164,6 @@ function startStudy() {
   isStudyMode = true;
   sessionCount++;
   remainingSeconds = studyTimeMinutes * 60;
-
-  appreciationShown = false;
   nextMusicBtn.classList.add("hidden");
 
   updateUI();
@@ -196,17 +173,13 @@ function startStudy() {
 /* ================= MUSIC ================= */
 
 function playMusic() {
-  if (!musicEnabled || waitingForStudyContinue || waitingAfterBreak) return;
+  if (!musicEnabled) return;
 
   if (isStudyMode) {
     breakAudio.pause();
-    studyAudio.play();
+    studyAudio.play().catch(() => {});
   } else {
-    if (currentBreakSongIndex === null) {
-      playNextBreakSong();
-    } else {
-      breakAudio.play();
-    }
+    playNextBreakSong();
   }
 }
 
@@ -215,33 +188,21 @@ function stopMusic() {
   breakAudio.pause();
 }
 
-/* 🔁 SEQUENTIAL BREAK MUSIC */
 function playNextBreakSong() {
-  if (!musicEnabled || breakSongs.length === 0) return;
-
-  if (currentBreakSongIndex === null) {
-    currentBreakSongIndex = 0;
-  } else {
-    currentBreakSongIndex++;
-    if (currentBreakSongIndex >= breakSongs.length) {
-      currentBreakSongIndex = 0; // loop back
-    }
-  }
+  currentBreakSongIndex =
+    currentBreakSongIndex === null || currentBreakSongIndex >= breakSongs.length - 1
+      ? 0
+      : currentBreakSongIndex + 1;
 
   breakAudio.src = breakSongs[currentBreakSongIndex];
   breakAudio.currentTime = 0;
-  breakAudio.play();
+  breakAudio.play().catch(() => {});
 }
 
 function toggleMusic() {
   musicEnabled = !musicEnabled;
   musicToggleBtn.textContent = musicEnabled ? "🔊 Music ON" : "🔇 Music OFF";
-
-  if (!musicEnabled) {
-    stopMusic();
-  } else {
-    playMusic();
-  }
+  musicEnabled ? playMusic() : stopMusic();
 }
 
 /* ================= UI ================= */
@@ -256,77 +217,24 @@ function updateDisplay() {
 function updateUI() {
   document.body.classList.toggle("study-mode", isStudyMode);
   document.body.classList.toggle("break-mode", !isStudyMode);
-
   modeText.textContent = isStudyMode ? "STUDY MODE" : "BREAK MODE";
-  motivationText.textContent = isStudyMode
-    ? "Stay focused. Consistency beats talent."
-    : "Rest is part of success. Reset calmly.";
 }
 
 function updateBreakInfo() {
   breakInfo.textContent = `Break time: ${breakTimeMinutes} minutes`;
 }
 
-/* ================= CARDS ================= */
-
-function showStudyCard() {
-  appreciationTitle.textContent = "Great work";
-  appreciationText.textContent =
-    motivationMessages[Math.floor(Math.random() * motivationMessages.length)];
-
-  continueBreakBtn.textContent = "Continue to Break";
-  continueBreakBtn.onclick = () => {
-    appreciationOverlay.classList.add("hidden");
-    waitingForStudyContinue = false;
-    startBreak();
-  };
-
-  appreciationOverlay.classList.remove("hidden");
-}
-
-function showBreakCard() {
-  appreciationTitle.textContent = "Break complete";
-  appreciationText.textContent = "Ready to resume focused study?";
-
-  continueBreakBtn.textContent = "Start Study";
-  continueBreakBtn.onclick = () => {
-    appreciationOverlay.classList.add("hidden");
-    waitingAfterBreak = false;
-    startStudy();
-  };
-
-  appreciationOverlay.classList.remove("hidden");
-}
-
 /* ================= SOUND ================= */
 
 function playStartSound() {
   startSound.currentTime = 0;
-  startSound.play();
+  startSound.play().catch(() => {});
 }
 
 function playEndSound() {
   endSound.currentTime = 0;
-  endSound.play();
+  endSound.play().catch(() => {});
 }
-
-/* ================= STUDY SELECTOR ================= */
-
-studyButtons.forEach(btn => {
-  btn.addEventListener("click", () => {
-    if (isRunning) return;
-
-    studyButtons.forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-
-    studyTimeMinutes = parseInt(btn.dataset.time);
-    breakTimeMinutes = breakTimeMap[studyTimeMinutes];
-
-    remainingSeconds = studyTimeMinutes * 60;
-    updateBreakInfo();
-    updateDisplay();
-  });
-});
 
 /* ================= EVENTS ================= */
 
