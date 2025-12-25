@@ -1,6 +1,6 @@
 /* ================= CONFIG ================= */
 
-let studyTimeMinutes = 25; // ✅ FIXED (was 1)
+let studyTimeMinutes = 25;
 
 const breakTimeMap = {
   25: 5,
@@ -9,7 +9,7 @@ const breakTimeMap = {
 };
 
 const appreciationMap = {
-  25: 3,
+  25: 1,
   45: 2,
   60: 1
 };
@@ -20,11 +20,11 @@ let breakTimeMinutes = breakTimeMap[studyTimeMinutes];
 const studySong = "music/study.mp3";
 
 const breakSongs = [
-  "music/break/Vanakkam Chennai - Osaka Osaka Video  Shiva, Priya Anand.mp3",
-  "music/break/Maragatha Naanayam _ Nee Kavithaigala Song with Lyrics _ Aadhi, Nikki Galrani _ Dhibu Ninan Thomas.mp3",
-  "music/break/Vikram Vedha Songs _ Pogatha Yennavittu Song with Lyrics _ R.Madhavan, Vijay Sethupathi _ Sam C.S.mp3",
-  "music/break/Guru (Tamil) - Aaruyirae Video  A.R. Rahman.mp3",
-  "music/break/Athinthom Video Song  Chandramukhi Movie Songs  4K Full HD  Rajinikanth  SP Balasubrahmanyam.mp3"
+  "music/break/break1.mp3",
+  "music/break/break2.mp3",
+  "music/break/break3.mp3",
+  "music/break/break4.mp3",
+  "music/break/break5.mp3"
 ];
 
 /* ================= STATE ================= */
@@ -36,13 +36,13 @@ let remainingSeconds = studyTimeMinutes * 60;
 let timerInterval = null;
 
 let sessionCount = 1;
-let currentBreakSongIndex = null;
+let currentBreakSongIndex = 0;
 
 let appreciationShown = false;
 let waitingForStudyContinue = false;
 let waitingAfterBreak = false;
 
-let firstStartDone = false; // ✅ FIX
+let firstStartDone = false;
 
 /* ================= ELEMENTS ================= */
 
@@ -88,7 +88,7 @@ function startTimer() {
   isRunning = true;
   playStartSound();
 
-  // ✅ FORCE STUDY MUSIC ON FIRST START
+  // Force study music on FIRST start
   if (!firstStartDone && isStudyMode && musicEnabled) {
     firstStartDone = true;
     studyAudio.currentTime = 0;
@@ -130,7 +130,7 @@ function resetTimer() {
   waitingForStudyContinue = false;
   waitingAfterBreak = false;
 
-  currentBreakSongIndex = null;
+  currentBreakSongIndex = 0;
   nextMusicBtn.classList.add("hidden");
   appreciationOverlay.classList.add("hidden");
 
@@ -144,16 +144,20 @@ function handleSessionEnd() {
   pauseTimer();
   playEndSound();
 
-  if (isStudyMode) startBreak();
-  else showBreakCard();
+  if (isStudyMode) {
+    startBreak();
+  } else {
+    waitingAfterBreak = true;
+    showBreakCard();
+  }
 }
 
-/* ================= MODES ================= */
+/* ================= MODE HANDLERS ================= */
 
 function startBreak() {
   isStudyMode = false;
   remainingSeconds = breakTimeMinutes * 60;
-  currentBreakSongIndex = null;
+  currentBreakSongIndex = 0;
   nextMusicBtn.classList.remove("hidden");
 
   updateUI();
@@ -189,14 +193,14 @@ function stopMusic() {
 }
 
 function playNextBreakSong() {
-  currentBreakSongIndex =
-    currentBreakSongIndex === null || currentBreakSongIndex >= breakSongs.length - 1
-      ? 0
-      : currentBreakSongIndex + 1;
+  if (!musicEnabled) return;
 
   breakAudio.src = breakSongs[currentBreakSongIndex];
   breakAudio.currentTime = 0;
   breakAudio.play().catch(() => {});
+
+  currentBreakSongIndex =
+    (currentBreakSongIndex + 1) % breakSongs.length;
 }
 
 function toggleMusic() {
@@ -210,7 +214,8 @@ function toggleMusic() {
 function updateDisplay() {
   const m = Math.floor(remainingSeconds / 60);
   const s = remainingSeconds % 60;
-  timeDisplay.textContent = `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  timeDisplay.textContent =
+    `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
   sessionInfo.textContent = `Session ${sessionCount}`;
 }
 
@@ -224,6 +229,22 @@ function updateBreakInfo() {
   breakInfo.textContent = `Break time: ${breakTimeMinutes} minutes`;
 }
 
+/* ================= CARDS ================= */
+
+function showBreakCard() {
+  appreciationTitle.textContent = "Break complete";
+  appreciationText.textContent = "Ready to resume focused study?";
+
+  continueBreakBtn.textContent = "Start Study";
+  continueBreakBtn.onclick = () => {
+    appreciationOverlay.classList.add("hidden");
+    waitingAfterBreak = false;
+    startStudy();
+  };
+
+  appreciationOverlay.classList.remove("hidden");
+}
+
 /* ================= SOUND ================= */
 
 function playStartSound() {
@@ -235,6 +256,25 @@ function playEndSound() {
   endSound.currentTime = 0;
   endSound.play().catch(() => {});
 }
+
+/* ================= STUDY SELECTOR ================= */
+
+studyButtons.forEach(btn => {
+  btn.addEventListener("click", () => {
+    if (isRunning) return;
+
+    studyButtons.forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+
+    studyTimeMinutes = parseInt(btn.dataset.time, 10);
+    breakTimeMinutes = breakTimeMap[studyTimeMinutes];
+
+    remainingSeconds = studyTimeMinutes * 60;
+
+    updateBreakInfo();
+    updateDisplay();
+  });
+});
 
 /* ================= EVENTS ================= */
 
