@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Study Focus Timer</title>
+
+  <!-- Google Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="study-mode">
+
+  <!-- ===== Toast Notification ===== -->
+  <div id="statusToast" class="toast hidden"></div>
+
+  <!-- ===== Appreciation / Confirmation Overlay ===== -->
+  <div id="appreciationOverlay" class="overlay hidden">
+    <div class="appreciation-card">
+      <div class="checkmark">✔</div>
+      <h2 id="appreciationTitle">Well done</h2>
+      <p id="appreciationText">
+        You completed a focused block.
+      </p>
+      <button id="continueBreakBtn">Continue</button>
+    </div>
+  </div>
+
+  <!-- ===== App Container ===== -->
+  <div class="app">
+
+    <!-- Header -->
+    <header class="header">
+      <h1>Focus Timer</h1>
+      <p class="subtitle">One session closer to AIR</p>
+    </header>
+
+    <!-- Study Time Selector -->
+    <div class="time-selector">
+      <button class="time-btn active" data-time="25">25 min</button>
+      <button class="time-btn" data-time="45">45 min</button>
+      <button class="time-btn" data-time="60">60 min</button>
+    </div>
+
+    <!-- Break Info -->
+    <div class="motivation" id="breakInfo">
+      Break time: 5 minutes
+    </div>
+
+    <!-- Motivation Line -->
+    <div class="motivation" id="motivationText">
+      Stay focused. Consistency beats talent.
+    </div>
+
+    <!-- Timer Card -->
+    <div class="timer-card">
+      <div class="mode" id="modeText">STUDY MODE</div>
+      <div class="time" id="timeDisplay">25:00</div>
+      <div class="session" id="sessionInfo">Session 1</div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+      <button id="startBtn">▶ Start</button>
+      <button id="pauseBtn">⏸ Pause</button>
+      <button id="resetBtn">🔄 Reset</button>
+    </div>
+
+    <!-- Music Controls -->
+    <div class="music-controls">
+      <button id="musicToggleBtn">🔊 Music ON</button>
+      <button id="nextMusicBtn" class="hidden">⏭ Next</button>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <p>Built for exam preparation 💪</p>
+    </footer>
+
+  </div>
+
+  <!-- ===== Audio Elements ===== -->
+  <audio id="studyAudio" src="music/study.mp3"></audio>
+  <audio id="breakAudio"></audio>
+
+  <audio id="startSound" src="sounds/start.mp3"></audio>
+  <audio id="endSound" src="sounds/end.mp3"></audio>
+
+  <!-- JavaScript -->
+  <script src="script.js"></script>
+
+</body>
+</html>
