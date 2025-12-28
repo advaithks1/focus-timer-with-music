@@ -9,7 +9,7 @@ const breakTimeMap = {
 };
 
 const appreciationMap = {
-  25: 1,
+  25: 3,
   45: 2,
   60: 1
 };
